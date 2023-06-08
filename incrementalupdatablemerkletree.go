@@ -204,3 +204,71 @@ func (tree *IncrementalAndUpdatableMerkletree) BuildTree() (allLeaves map[uint]m
 	}
 	return
 }
+
+func (tree *IncrementalAndUpdatableMerkletree) PopulateTreeWithZeros(debug bool) (err error) {
+	var i, z, numLeaves, treeDepth uint
+	var hash *big.Int
+	treeDepth = uint(tree.Depth)
+	log.Println(" === PopulateTreeWithZeros === ")
+	for i = 0; i < uint(tree.Depth); i++ {
+		if debug {
+			log.Println(float64(treeDepth - i))
+			log.Println(math.Pow(2, float64(treeDepth-i)))
+			log.Println(uint(math.Pow(2, float64(treeDepth-i))))
+		}
+		numLeaves = uint(math.Pow(2, float64(treeDepth-i)))
+		index := 0
+		if i < 1 {
+			hash = tree.Zeros[i]
+		}
+		for z = 0; z < numLeaves; z++ {
+			if i < 1 {
+				tree.BaseItems[z] = tree.Zeros[i]
+			} else {
+				var hashInputs []*big.Int
+				if index&1 == 0 {
+					// LEFT
+					tree.LastSubtrees[i] = [2]*big.Int{hash, tree.Zeros[i]}
+					hashInputs = append(hashInputs, hash, tree.Zeros[i])
+				} else {
+					// RIGHT
+					tree.LastSubtrees[i] = [2]*big.Int{tree.LastSubtrees[i][0], hash}
+					hashInputs = append(hashInputs, tree.LastSubtrees[i][0], hash)
+				}
+				hash, err = poseidon.Hash(hashInputs)
+				if err != nil {
+					return
+				}
+			}
+			index >>= 1
+		}
+	}
+	return
+}
+
+/*
+index := tree.NumberOfLeaves
+	hash := leaf.LeafHash
+	var i uint
+	for ; i < tree.Depth; i++ {
+		var hashInputs []*big.Int
+		if index&1 == 0 {
+			// LEFT
+			tree.LastSubtrees[i] = [2]*big.Int{hash, tree.Zeros[i]}
+			hashInputs = append(hashInputs, hash, tree.Zeros[i])
+		} else {
+			// RIGHT
+			tree.LastSubtrees[i] = [2]*big.Int{tree.LastSubtrees[i][0], hash}
+			hashInputs = append(hashInputs, tree.LastSubtrees[i][0], hash)
+		}
+		hash, err = poseidon.Hash(hashInputs)
+		if err != nil {
+			return
+		}
+		index >>= 1
+	}
+	tree.BaseItems[uint(tree.NumberOfLeaves)] = leaf.LeafHash
+	tree.NumberOfLeaves++
+	tree.Root = hash
+	return
+*/
