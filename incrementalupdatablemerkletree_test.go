@@ -68,3 +68,23 @@ func TestMktreeUpdateLastItem(t *testing.T) {
 	t.Log("Merkletree root: " + mktree.Root.String())
 	t.Logf("Merkletree root in hex: 0x%064s", mktree.Root.Text(16))
 }
+
+func TestMktreeUpdateLastItemWithEmptyTree(t *testing.T) {
+	t.Log("Starting TestMktreeUpdateLastItem...")
+	t.Log("Creating merkletree...")
+	mktree, err := NewIncrementalAndUpdatableMerkletree(20, TestZeroValue)
+	if err != nil {
+		t.Fatal("could not create merkletree. Error: " + err.Error())
+	}
+	t.Log("Merkletree has been created.")
+	t.Log("Updating last leaf...")
+	ok := false
+	leaf := LeafData{}
+	leaf.LeafHash, ok = big.NewInt(0).SetString("1bdded415724018275c7fcc2f564f64db01b5bbeb06d65700564b05c3c59c9e6", 16)
+	if !ok {
+		t.Fatal("could not convert to big int the new leaf hash. Error: " + err.Error())
+	}
+	mktree.InsertLeaf(leaf)
+	t.Log("Merkletree root: " + mktree.Root.String())
+	t.Logf("Merkletree root in hex: 0x%064s", mktree.Root.Text(16))
+}
