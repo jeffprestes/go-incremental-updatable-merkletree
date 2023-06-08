@@ -7,7 +7,7 @@ Golang's implementation of Incrememental and Updatable Merkletree
 In order to use it in your Go's project, import it using:
 
 ```bash
-go get github.com/jeffprestes/go-incremental-updatable-merkletree
+go get -u github.com/jeffprestes/go-incremental-updatable-merkletree
 ```
 
 ## Testing
