@@ -89,7 +89,7 @@ func (tree *IncrementalAndUpdatableMerkletree) UpdateLeaf(index int64, leaf Leaf
 	pos := uint(index)
 	hash := leaf.LeafHash
 	tree.BaseItems[pos] = leaf.LeafHash
-	allLeaves, err := tree.BuildTree()
+	allLeaves, err := tree.BuildTree(logDebug)
 	if err != nil {
 		log.Printf("UpdateLeaf - tree.BuildTree - Error: %s\n", err.Error())
 		return
@@ -112,7 +112,7 @@ func (tree *IncrementalAndUpdatableMerkletree) GenerateMerkleProofPath(index uin
 		return
 	}
 	var i, z, pos uint
-	allLeaves, err := tree.BuildTree()
+	allLeaves, err := tree.BuildTree(logDebug)
 	if err != nil {
 		log.Printf("GenerateMerkleProofPath - tree.BuildTree - Error: %s\n", err.Error())
 		return nil, nil, err
@@ -172,24 +172,35 @@ func (tree *IncrementalAndUpdatableMerkletree) FindIndexByValue(hashLeaf *big.In
 	return
 }
 
-func (tree *IncrementalAndUpdatableMerkletree) BuildTree() (allLeaves map[uint]map[uint]*big.Int, err error) {
+func (tree *IncrementalAndUpdatableMerkletree) BuildTree(debug bool) (allLeaves map[uint]map[uint]*big.Int, err error) {
 	var i, z, numLeaves, treeDepth uint
 	var item *big.Int
 	allLeaves = make(map[uint]map[uint]*big.Int)
 	treeDepth = uint(tree.Depth)
+	if debug {
+		log.Println(" === Starting BuildTree === ")
+	}
 	for i = 0; i < uint(tree.Depth); i++ {
 		allLeaves[i] = make(map[uint]*big.Int)
-		log.Println(" === BuildTree === ")
-		log.Println(float64(treeDepth - i))
-		log.Println(math.Pow(2, float64(treeDepth-i)))
-		log.Println(uint(math.Pow(2, float64(treeDepth-i))))
 		numLeaves = uint(math.Pow(2, float64(treeDepth-i)))
+		if debug {
+			log.Println(" Level: ", float64(treeDepth-i))
+			log.Println(" Number of leaves: ", numLeaves)
+		}
 		for z = 0; z < numLeaves; z++ {
 			if i < 1 {
+				if debug {
+					log.Printf(" Is Base Item %d null ? %t\n", z, tree.BaseItems[uint(z)] == nil)
+				}
 				if tree.BaseItems[uint(z)] != nil {
 					item = tree.BaseItems[uint(z)]
 				} else {
 					item = tree.Zeros[i]
+				}
+				if debug {
+					if item.Cmp(tree.Zeros[i]) != 0 {
+						log.Printf(" Item value %s is different of what Zero value is %s\n", item.Text(10), tree.Zeros[i].Text(10))
+					}
 				}
 			} else {
 				hashInputs := []*big.Int{allLeaves[i-1][z*2], allLeaves[i-1][((z * 2) + 1)]}
@@ -201,6 +212,9 @@ func (tree *IncrementalAndUpdatableMerkletree) BuildTree() (allLeaves map[uint]m
 			}
 			allLeaves[i][z] = item
 		}
+	}
+	if debug {
+		log.Println(" === End BuildTree === ")
 	}
 	return
 }
@@ -221,6 +235,7 @@ func (tree *IncrementalAndUpdatableMerkletree) PopulateTreeWithZeros(debug bool)
 		index := 0
 		if i < 1 {
 			hash = tree.Zeros[i]
+			tree.NumberOfLeaves = int(numLeaves)
 		}
 		for z = 0; z < numLeaves; z++ {
 			if i < 1 {
