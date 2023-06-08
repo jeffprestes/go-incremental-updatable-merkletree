@@ -209,12 +209,13 @@ func (tree *IncrementalAndUpdatableMerkletree) PopulateTreeWithZeros(debug bool)
 	var i, z, numLeaves, treeDepth uint
 	var hash *big.Int
 	treeDepth = uint(tree.Depth)
-	log.Println(" === PopulateTreeWithZeros === ")
+	if debug {
+		log.Println(" === PopulateTreeWithZeros === ")
+	}
 	for i = 0; i < uint(tree.Depth); i++ {
 		if debug {
-			log.Println(float64(treeDepth - i))
-			log.Println(math.Pow(2, float64(treeDepth-i)))
-			log.Println(uint(math.Pow(2, float64(treeDepth-i))))
+			log.Println("Layer: ", float64(treeDepth-i))
+			log.Println("Number of leaves: ", uint(math.Pow(2, float64(treeDepth-i))))
 		}
 		numLeaves = uint(math.Pow(2, float64(treeDepth-i)))
 		index := 0
@@ -239,9 +240,14 @@ func (tree *IncrementalAndUpdatableMerkletree) PopulateTreeWithZeros(debug bool)
 				if err != nil {
 					return
 				}
+				index >>= 1
+				tree.Root = hash
 			}
-			index >>= 1
 		}
+	}
+
+	if debug {
+		log.Println(" === End PopulateTreeWithZeros === ")
 	}
 	return
 }
