@@ -107,47 +107,23 @@ func (tree *IncrementalAndUpdatableMerkletree) UpdateLeaf(index int64, leaf Leaf
 }
 
 func (tree *IncrementalAndUpdatableMerkletree) GenerateMerkleProofPath(index uint, logDebug bool) (path []uint8, siblings []*big.Int, err error) {
-	if index > uint(len(tree.LastSubtrees)-1) {
+	if index >= uint(tree.NumberOfLeaves) {
 		err = fmt.Errorf("invalid leaf index. it is greather than actual leaves inserted")
 		return
 	}
-	var i, z, pos uint
-	allLeaves, err := tree.BuildTree(logDebug)
-	if err != nil {
-		log.Printf("GenerateMerkleProofPath - tree.BuildTree - Error: %s\n", err.Error())
-		return nil, nil, err
-	}
-	if logDebug {
-		log.Println("# GenerateMerkleProofPath", "Actual Leaves:")
-		for i = 0; int(i) < len(allLeaves); i++ {
-			for z = 0; int(z) < len(allLeaves[i]); z++ {
-				item := allLeaves[i][z]
-				log.Println("#  GenerateMerkleProofPath", "- level: ", i, " - leaf ", z, ": ", item.String())
-			}
-		}
-		hashInputs := []*big.Int{allLeaves[3][0], allLeaves[3][1]}
-		item, err := poseidon.Hash(hashInputs)
-		if err != nil {
-			log.Printf("GenerateMerkleProofPath - Actual Root Leaves - poseidon.Hash - Error: %s\n", err.Error())
-			return nil, nil, err
-		}
-		log.Println("# GenerateMerkleProofPath", "Actual Root Leaves:", item.String())
-		log.Println("# GenerateMerkleProofPath", "Actual Basetree:")
-		for i = 0; int(i) < len(tree.BaseItems); i++ {
-			item := tree.BaseItems[uint(i)]
-			log.Println("#  GenerateMerkleProofPath", "item", item.String())
-		}
-	}
-	pos = uint(index)
-	for i = 0; i < tree.Depth; i++ {
+	pos := uint(index)
+	var i uint
+	for ; i < tree.Depth; i++ {
 		if index&1 == 0 {
 			// LEFT
 			path = append(path, 0)
-			siblings = append(siblings, allLeaves[i][pos+1])
+			// tree.LastSubtrees[i] = [2]*big.Int{hash, tree.Zeros[i]}
+			siblings = append(siblings, tree.Zeros[i])
 		} else {
 			// RIGHT
 			path = append(path, 1)
-			siblings = append(siblings, allLeaves[i][pos-1])
+			// tree.LastSubtrees[i] = [2]*big.Int{tree.LastSubtrees[i][0], hash}
+			siblings = append(siblings, tree.LastSubtrees[i][0])
 		}
 		index >>= 1
 		pos = uint(math.Pow(float64(index), 1))
