@@ -138,7 +138,10 @@ func (tree *IncrementalAndUpdatableMerkletree) GenerateMerkleProofPath(index uin
 }
 
 func (tree *IncrementalAndUpdatableMerkletree) FindIndexByValue(hashLeaf *big.Int) (index int64, err error) {
-	for idx, item := range tree.BaseItems {
+	totalLeaves := uint(tree.NumberOfLeaves)
+	var idx uint
+	for ; idx < totalLeaves; idx++ {
+		item := tree.BaseItems[idx]
 		if item.Cmp(hashLeaf) == 0 {
 			index = int64(idx)
 			return
