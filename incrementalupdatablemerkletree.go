@@ -50,7 +50,36 @@ func NewIncrementalAndUpdatableMerkletree(depth uint, zero *big.Int) (tree Incre
 	return
 }
 
+func NewPopulatedIncrementalAndUpdatableMerkletree(depth uint, zeros map[uint]*big.Int) (tree IncrementalAndUpdatableMerkletree, err error) {
+	err = nil
+	if depth > TREE_MAX_DEPTH {
+		err = fmt.Errorf("NewIncrementalAndUpdatableMerkletree: tree depth must be between 1 and 32")
+		return
+	}
+	tree.Depth = depth
+	tree.Zeros = zeros
+	tree.BaseItems = make(map[uint]*big.Int)
+	tree.LastSubtrees = make(map[uint][2]*big.Int)
+	var i uint
+	var zero *big.Int
+	for ; i < tree.Depth; i++ {
+		var hashInputs []*big.Int
+		hashInputs = append(hashInputs, tree.Zeros[i], tree.Zeros[i])
+		zero, err = poseidon.Hash(hashInputs)
+		if err != nil {
+			return tree, err
+		}
+	}
+	tree.Root = zero
+	return
+}
+
 func (tree *IncrementalAndUpdatableMerkletree) InsertLeaf(leaf LeafData) (err error) {
+	err = tree.InsertLeafWithDebug(leaf, false)
+	return
+}
+
+func (tree *IncrementalAndUpdatableMerkletree) InsertLeafWithDebug(leaf LeafData, debug bool) (err error) {
 	if tree.NumberOfLeaves == TREE_MAX_DEPTH {
 		err = fmt.Errorf("tree reached max leaves")
 		return
@@ -64,19 +93,31 @@ func (tree *IncrementalAndUpdatableMerkletree) InsertLeaf(leaf LeafData) (err er
 			// LEFT
 			tree.LastSubtrees[i] = [2]*big.Int{hash, tree.Zeros[i]}
 			hashInputs = append(hashInputs, hash, tree.Zeros[i])
+			if debug {
+				log.Printf("InsertLeaf - Pos: Left - Level: %d - Hash: %s - Zero: %s\n", i, hash.Text(16), tree.Zeros[i].Text(16))
+			}
 		} else {
 			// RIGHT
 			tree.LastSubtrees[i] = [2]*big.Int{tree.LastSubtrees[i][0], hash}
 			hashInputs = append(hashInputs, tree.LastSubtrees[i][0], hash)
+			if debug {
+				log.Printf("InsertLeaf - Pos: Right - Level: %d - LastSubtrees: %s - Hash: %s\n", i, tree.LastSubtrees[i][0].Text(16), hash.Text(16))
+			}
 		}
 		hash, err = poseidon.Hash(hashInputs)
 		if err != nil {
 			return
 		}
+		if debug {
+			log.Printf("InsertLeaf - Level: %d - Calculated Hash: %s\n", i, hash.Text(16))
+		}
 		index >>= 1
 	}
 	tree.BaseItems[uint(tree.NumberOfLeaves)] = leaf.LeafHash
 	tree.NumberOfLeaves++
+	if debug {
+		log.Printf("InsertLeaf - Root Hash: %s\n", hash.Text(16))
+	}
 	tree.Root = hash
 	return
 }
@@ -103,6 +144,42 @@ func (tree *IncrementalAndUpdatableMerkletree) UpdateLeaf(index int64, leaf Leaf
 	if logDebug {
 		log.Println("tree *IncrementalBinaryTree - UpdateLeaf - end - index:", index, " - pos:", pos, " - leaf:", leaf.LeafHash.String(), " - root:", hash.String())
 	}
+	return
+}
+
+func (tree *IncrementalAndUpdatableMerkletree) UpdateLeafAtLevel(index int64, level uint, leaf LeafData, logDebug bool) (err error) {
+	if tree.NumberOfLeaves == TREE_MAX_DEPTH {
+		err = fmt.Errorf("tree reached max leaves")
+		return
+	}
+	levelsAbove := tree.Depth - level
+	if logDebug {
+		log.Printf("UpdateLeafAtLevel - LevelsAbove: %d\n", levelsAbove)
+	}
+	zeros := make(map[uint]*big.Int)
+	i := uint(0)
+	for ; level < tree.Depth; level++ {
+		zeros[i] = tree.Zeros[level]
+		i++
+	}
+	if logDebug {
+		log.Printf("UpdateLeafAtLevel - zeros: %+v\n", zeros)
+	}
+	tmpMk, err := NewPopulatedIncrementalAndUpdatableMerkletree(levelsAbove, zeros)
+	if err != nil {
+		return
+	}
+	if logDebug {
+		log.Printf("UpdateLeafAtLevel - Before - Num of leaves: %+v - Root: %s\n", tmpMk.NumberOfLeaves, tmpMk.Root.Text(16))
+	}
+	err = tmpMk.InsertLeafWithDebug(leaf, false)
+	if err != nil {
+		return
+	}
+	if logDebug {
+		log.Printf("UpdateLeafAtLevel - After - Num of leaves: %+v - Item Zero: %s - Root: %s\n", tmpMk.NumberOfLeaves, tmpMk.BaseItems[0].Text(16), tmpMk.Root.Text(16))
+	}
+	tree.Root.SetBytes(tmpMk.Root.Bytes())
 	return
 }
 
