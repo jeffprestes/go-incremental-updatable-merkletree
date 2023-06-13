@@ -101,7 +101,7 @@ func (tree *IncrementalAndUpdatableMerkletree) InsertLeafWithDebug(leaf LeafData
 			tree.LastSubtrees[i] = [2]*big.Int{tree.LastSubtrees[i][0], hash}
 			hashInputs = append(hashInputs, tree.LastSubtrees[i][0], hash)
 			if debug {
-				log.Printf("InsertLeaf - Pos: Right - Level: %d - LastSubtrees: %s - Hash: %s\n", i, tree.LastSubtrees[i][0].Text(16), hash.Text(16))
+				log.Printf("InsertLeaf - Pos: Right - Level: %d - LastSubtrees: %s %s - Hash: %s %s\n", i, tree.LastSubtrees[i][0].Text(16), tree.LastSubtrees[i][0].Text(10), hash.Text(16), hash.Text(10))
 			}
 		}
 		hash, err = poseidon.Hash(hashInputs)
