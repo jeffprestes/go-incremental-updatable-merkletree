@@ -94,7 +94,7 @@ func (tree *IncrementalAndUpdatableMerkletree) InsertLeafWithDebug(leaf LeafData
 			tree.LastSubtrees[i] = [2]*big.Int{hash, tree.Zeros[i]}
 			hashInputs = append(hashInputs, hash, tree.Zeros[i])
 			if debug {
-				log.Printf("InsertLeaf - Pos: Left - Level: %d - Hash: %s - Zero: %s\n", i, hash.Text(16), tree.Zeros[i].Text(16))
+				log.Printf("InsertLeaf - Pos: Left - Level: %d - Hash: %s %s - Zero: %s %s\n", i, hash.Text(16), hash.Text(10), tree.Zeros[i].Text(16), tree.Zeros[i].Text(10))
 			}
 		} else {
 			// RIGHT
