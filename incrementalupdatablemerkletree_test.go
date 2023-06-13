@@ -113,7 +113,7 @@ func TestMktreePopulatedUpdateLastItem(t *testing.T) {
 	ok := false
 	leaf := LeafData{}
 	// leaf.LeafHash, ok = big.NewInt(0).SetString("22fbeb55d785f2d0723d9325756a56c25f2e4006f1a0427ab17516fd033ed3f5", 16)
-	leaf.LeafHash, ok = big.NewInt(0).SetString("0fb2bc182d159c8c843b6f69c2fed99955c6007787c4c573ce65edb4f15cd9df", 16)
+	leaf.LeafHash, ok = big.NewInt(0).SetString("6506879107834838318280627136380451136958988557066129186139041330782960789971", 10)
 	if !ok {
 		t.Fatal("could not convert to big int the new leaf hash. Error: " + err.Error())
 	}
@@ -149,7 +149,7 @@ func TestMktreeUpdateLastItemWithEmptyTree(t *testing.T) {
 func TestMktreeProofGeneration(t *testing.T) {
 	t.Log("Starting TestMktreeProofGeneration...")
 	t.Log("Creating merkletree...")
-	mktree, err := NewIncrementalAndUpdatableMerkletree(20, TestZeroValue)
+	mktree, err := NewIncrementalAndUpdatableMerkletree(26, TestZeroValue)
 	if err != nil {
 		t.Fatal("could not create merkletree. Error: " + err.Error())
 	}
@@ -157,15 +157,15 @@ func TestMktreeProofGeneration(t *testing.T) {
 	t.Log("Updating last leaf...")
 	ok := false
 	leaf := LeafData{}
-	leaf.LeafHash, ok = big.NewInt(0).SetString("1bdded415724018275c7fcc2f564f64db01b5bbeb06d65700564b05c3c59c9e6", 16)
+	leaf.LeafHash, ok = big.NewInt(0).SetString("6506879107834838318280627136380451136958988557066129186139041330782960789971", 10)
 	if !ok {
 		t.Fatal("could not convert to big int the new leaf hash. Error: " + err.Error())
 	}
-	mktree.InsertLeaf(leaf)
+	mktree.UpdateLeafAtLevel(0, 6, leaf, true)
 	t.Log("Merkletree root: " + mktree.Root.String())
 	t.Logf("Merkletree root in hex: 0x%064s", mktree.Root.Text(16))
 	log.Println("Starting GenerateMerkleProofPath...")
-	path, siblings, err := mktree.GenerateMerkleProofPath(0, false)
+	path, siblings := mktree.GenerateMerkleProofPathStartingFromALevel(0, 6, false)
 	if err != nil {
 		t.Fatal("could not Generate Merkle Proof Path. Error: " + err.Error())
 	}

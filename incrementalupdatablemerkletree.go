@@ -183,24 +183,19 @@ func (tree *IncrementalAndUpdatableMerkletree) UpdateLeafAtLevel(index int64, le
 	return
 }
 
-func (tree *IncrementalAndUpdatableMerkletree) GenerateMerkleProofPath(index uint, logDebug bool) (path []uint8, siblings []*big.Int, err error) {
-	if index >= uint(tree.NumberOfLeaves) {
-		err = fmt.Errorf("invalid leaf index. it is greather than actual leaves inserted")
-		return
-	}
+func (tree *IncrementalAndUpdatableMerkletree) GenerateMerkleProofPathStartingFromALevel(index, level uint, logDebug bool) (path []uint8, siblings []*big.Int) {
 	pos := uint(index)
-	var i uint
-	for ; i < tree.Depth; i++ {
+	for ; level < tree.Depth; level++ {
 		if index&1 == 0 {
 			// LEFT
 			path = append(path, 0)
 			// tree.LastSubtrees[i] = [2]*big.Int{hash, tree.Zeros[i]}
-			siblings = append(siblings, tree.Zeros[i])
+			siblings = append(siblings, tree.Zeros[level])
 		} else {
 			// RIGHT
 			path = append(path, 1)
 			// tree.LastSubtrees[i] = [2]*big.Int{tree.LastSubtrees[i][0], hash}
-			siblings = append(siblings, tree.LastSubtrees[i][0])
+			siblings = append(siblings, tree.LastSubtrees[level][0])
 		}
 		index >>= 1
 		pos = uint(math.Pow(float64(index), 1))
@@ -211,6 +206,15 @@ func (tree *IncrementalAndUpdatableMerkletree) GenerateMerkleProofPath(index uin
 	if logDebug {
 		log.Println("# GenerateMerkleProofPath", "Actual Root:", tree.Root)
 	}
+	return
+}
+
+func (tree *IncrementalAndUpdatableMerkletree) GenerateMerkleProofPath(index uint, logDebug bool) (path []uint8, siblings []*big.Int, err error) {
+	if index >= uint(tree.NumberOfLeaves) {
+		err = fmt.Errorf("invalid leaf index. it is greather than actual leaves inserted")
+		return
+	}
+	tree.GenerateMerkleProofPathStartingFromALevel(index, 0, logDebug)
 	return
 }
 
